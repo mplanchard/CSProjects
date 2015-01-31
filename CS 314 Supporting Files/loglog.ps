@@ -1,0 +1,488 @@
+%!PS-Adobe-1.0
+%%Title: linear/log paper sheet generator
+%%Creator: Maurizio Loreti - EMail: loreti@padova.infn.it
+%%CreationDate: April 21, 1993
+%%Pages: 1
+%%DocumentFonts: Times-Roman
+%%EndComments
+% See documentation at end of this file
+% From jbednar@slip-17.telesys.edu Thu Sep  1 19:59:15 1994
+
+/init {
+% Stack: - init -
+% Performs all the initialisation stuff
+
+  /str 20 string def          % All-purpose string buffer
+
+  /in {72 mul}      def       % Inches      -> points conversion
+  /cm {2.54 div in} def       % Centimeters -> points conversion
+  /mm {25.4 div in} def       % Millimeters -> points conversion
+
+  /xsheet 21.0 cm def         % Default sheet sizes (A4 paper)
+  /ysheet 29.7 cm def
+
+  /margin 2 cm def            % Margin outside the millimetered region
+
+  /fontsize 10 def            % Font size for axis labels
+
+  /bordersize 1    def        % Line size (borders)
+  /linesize   0.4  def        % Line size (divisions)
+  /smallsize  0.01 def        % Line size (small divisions)
+
+  /bordergray 0 def           % Line gray level (borders)
+  /linegray   0 def           % Line gray level (divisions)
+  /smallgray  0 def           % Line gray level (small divisions)
+} def
+
+/letter {
+% Stack: - letter -
+% Changes the values stored in "xsheet" and "ysheet" for
+% letter sized paper; the default is A4 sized paper.
+% CAUTION: MUST BE CALLED AFTER INIT AND BEFORE LANDSCAPE
+
+  /xsheet 8.5 in def
+  /ysheet 11  in def
+} def
+
+/landscape {
+% Stack: - landscape -
+% Changes the coordinate system to draw the sheet in landscape mode.
+% CAUTION: MUST BE CALLED AFTER LETTER
+
+  xsheet 0 translate 90 rotate
+  /temp xsheet def
+  /xsheet ysheet def
+  /ysheet temp def
+} def
+
+/getfont {
+% Stack: size getfont -
+% Loads the Times-Roman font scaled "size" points
+
+  /Times-Roman findfont exch scalefont setfont
+} def
+
+/drawborder {
+% Stack: - drawborder -
+% Draws a rectangular frame around the printed region,
+% at a fixed distance of "margin" from the sheet borders.
+% drawborder assumes that a translation to move the lower
+% left corner of the frame to (0,0) has already been performed.
+
+  gsave
+  bordersize setlinewidth
+  bordergray setgray
+  0 0 moveto
+  xsize 0 rlineto
+  0 ysize rlineto
+  xsize neg 0 rlineto
+  closepath
+  stroke
+  grestore
+} def
+
+/startlab {
+% Stack: N startlog (N) xsize(N)
+% Loads the default font, "fontsize" points high; sets the
+% gray level to black (0); then pushes on the stack a string
+% containing "N", and its x width in the loaded font size.
+
+  fontsize getfont
+  0 setgray
+  str cvs
+  dup stringwidth pop
+} def
+
+/doxlab {
+% Stack: x (N) xsize(N) doxlab (N) x_coord y_coord
+% Computes the right coordinates to print the x-label "N".
+
+  2 div neg                   % Stack: x (N) -xsize(N)/2
+  3 -1 roll                   % Stack: (N) -xsize(N)/2 x
+  add                         % Stack: (N) x_coord
+  xlabyoffset                 % Stack: (N) x_coord y_coord
+} def
+
+/doylab {
+% Stack: y (N) xsize(N) doylab (N) x_coord y_coord
+% Computes the right coordinates to print the y-label "N".
+
+  neg ylabxoffset add         % Stack: y (N) x_coord
+  3 -1 roll                   % Stack: (N) x_coord y
+  ylabyoffset add             % Stack: (N) x_coord y_coord
+} def
+
+/endlog {
+% Stack: exp (10) x y endlog -
+% Moves to (x,y) to display the string "10"; then moves again
+% and displays the power of ten ("exp") in the default font scaled
+% "expsize" points.
+
+  moveto show
+  0 expsize rmoveto
+  expsize getfont
+  str cvs show
+} def
+
+/drawxloglab {
+% Stack: exp x drawxloglab -
+% Draws the x-labels in log mode; the 10's are centered on "x",
+% and below the axis line by "xlabyoffset".
+
+  gsave
+  10 startlab                 % Stack: exp x (10) xsize(10)
+  doxlab                      % Stack: exp (10) x_coord y_coord
+  endlog                      % Stack: -
+  grestore
+} def
+
+/drawyloglab {
+% Stack: exp y drawyloglab -
+% Draws the y-labels in log mode: the 10's have their baselines
+% lowered by "ylabyoffset" on "y", and ending at "ylabxoffset"
+% from the frame border.
+
+  gsave
+  10 startlab                 % Stack: exp y (10) xsize(10)
+  doylab                      % Stack: exp (10) x_coord y_coord
+  endlog                      % Stack: -
+  grestore
+} def
+
+/drawxlab {
+% Stack: X x drawxlab -
+% Draws the x-labels in linear mode; the label ("X") is centered on
+% "x", and below the axis line by "xlabyoffset".
+
+  gsave                       % Draws the x label, X, at the required
+  exch                        % Stack: x X
+  startlab                    % Stack: x (X) xsize(X)
+  doxlab                      % Stack: x (X) x_coord y_coord
+  moveto show
+  grestore
+} def
+
+/drawylab {
+% Stack: Y y drawylab -
+% Draws the y-labels in linear mode; the label ("Y") has its baseline
+% lowered by "ylabyoffset" on "y", and ends at "ylabxoffset" from the
+% frame border.
+
+  gsave
+  exch                        % Stack: y Y
+  startlab                    % Stack: y (Y) xsize(Y)
+  doylab                      % Stack: (Y) x_coord y_coord
+  moveto show                 % Stack: -
+  grestore
+} def
+
+/drawxscale {
+% Stack: - drawxscale -
+% Draws the x scale, i.e. the vertical lines. The drawing itself
+% will be different if the array "xscale" has 2 elements (log scale),
+% or 3 (linear scale) or 4 (linear scale with non labeled subdivisions).
+
+  gsave
+  linesize setlinewidth       % Sets the correct line attributes
+  linegray setgray
+  /type xscale length def     % Inquire how many elements has xscale
+  type 2 eq {                 % xscale has 2 elements: log scale
+    xscale aload pop exch sub % Number of decades
+    /decade exch              % Length of 1 decade
+      xsize exch div def
+    /start 0 def              % Starting point of current decade
+    xscale aload pop          % Loop on the decades: the argument is the
+      1 sub 1 exch {          %   exponent
+      start drawxloglab       % Draw the label at the starting point
+      2 1 10 {
+        log decade mul        % Draw the lines for the 2..9 divisions,
+        start add 0 moveto    %   and for the start of the next decade
+        0 ysize rlineto
+        stroke
+      } for
+      /start                  % Bump start value
+        start decade add def
+    } for
+    xscale 1 get              % Draw the last label
+    xsize drawxloglab
+  }{
+    type 3 eq {               % xscale has 3 elements: linear scale
+      xscale aload pop        % Stack: Xmin Dx Xmax
+      3 1 roll                % Stack: Xmax Xmin Dx
+      /delta exch def         % Store Dx in "delta" for later use
+      /minval exch def        % Store Xmin in "minval" for later use
+      minval sub delta div    % Number of x intervals,
+      /nint exch              %   stored in "nint" for later use
+        round cvi def         %     ("nint" is rounded and int'ed)
+      /decade                 % Length of one x interval,
+        xsize nint div def    %   stored in "decade" for later use
+      /start 0 def            % Starting x value
+      nint {                  % Loop on intervals
+        minval start drawxlab % Draws the label
+        start 0 moveto        % Draws the line
+        0 ysize rlineto
+        stroke
+        /start start decade add def
+        /minval minval delta add def
+      } repeat
+      minval xsize drawxlab   % Draws the last label
+    }{
+      xscale aload pop        % xscale has 4 elements
+      /nsubint exch def       % Number of sub-intervals
+      3 1 roll
+      /delta exch def
+      /minval exch def
+      minval sub delta div
+      /nint exch round cvi def
+      /decade xsize nint div def
+      /subdecade decade nsubint div def
+      /nsubint nsubint 1 sub def
+      /start 0 def
+      nint {
+        minval start drawxlab
+        start 0 moveto
+        0 ysize rlineto
+        stroke
+        /temp start def
+        smallsize setlinewidth
+        smallgray setgray
+        nsubint {
+          /start start subdecade add def
+          start 0 moveto
+          0 ysize rlineto
+          stroke
+        } repeat
+        linesize setlinewidth
+        linegray setgray
+        /start temp decade add def
+        /minval minval delta add def
+      } repeat
+      minval xsize drawxlab
+    }ifelse
+  }ifelse
+  grestore
+} def
+
+/drawyscale {
+% Stack: - drawyscale -
+% Draws the y scale, i.e. the horizontal lines; with the same
+% rules used for drawxscale.
+
+  gsave
+  linesize setlinewidth
+  linegray setgray
+  /type yscale length def
+  type 2 eq {
+    yscale aload pop exch sub
+    /decade exch ysize exch div def
+    /start 0 def
+    yscale aload pop 1 sub 1 exch {
+      start drawyloglab
+      2 1 10 {
+        log decade mul start add 0 exch moveto
+        xsize 0 rlineto
+        stroke
+      } for
+      /start start decade add def
+    } for
+    yscale 1 get ysize drawyloglab
+  }{
+    type 3 eq {
+      yscale aload pop
+      3 -1 roll
+      sub exch div
+      ysize exch div
+      /decade exch def
+      /start 0 def
+      yscale aload pop 1 sub {
+        start drawylab
+        0 start moveto
+        xsize 0 rlineto
+        stroke
+        /start start decade add def
+      } for
+      yscale 2 get
+      ysize drawylab
+    }{
+      yscale aload pop
+      /nsubint exch def
+      3 -1 roll
+      sub exch div
+      ysize exch div
+      /decade exch def
+      /ysubint decade nsubint div def
+      /start 0 def
+      /nsubint nsubint 1 sub def
+      yscale aload pop pop 1 sub {
+        start drawylab
+        0 start moveto
+        xsize 0 rlineto
+        stroke
+        1 1 nsubint {
+          smallsize setlinewidth
+          smallgray setgray
+          ysubint mul start add 0 exch moveto
+          xsize 0 rlineto
+          stroke
+          linesize setlinewidth
+          linegray setgray
+        } for
+        /start start decade add def
+      } for
+      yscale 2 get
+      ysize drawylab
+    }ifelse
+  }ifelse
+  grestore
+} def
+
+/drawsheet {
+% Stack: - drawsheet -
+% Computes some constants, thes performs the drawing.
+% Caution: "xscale" and "yscale" MUST have been defined.
+
+  /xlabyoffset fontsize -2 mul def
+  /ylabxoffset fontsize -1.5 mul def
+  /ylabyoffset fontsize -0.3 mul def
+  /xsize xsheet margin 2 mul sub def
+  /ysize ysheet margin 2 mul sub def
+  /expsize fontsize 0.75 mul def
+  gsave
+  margin margin translate
+  drawxscale
+  drawyscale
+  drawborder
+  grestore
+} def
+
+%%EndProlog
+%%Page 1 1
+
+init
+letter
+/linegray 0.8 def
+/smallgray 0.8 def
+%
+% Scaling parameter formats:
+%  Linear
+%      /?scale [lower_bound label_increment higher_bound]
+%      /?scale [lower_bound label_increment higher_bound num_of_subintervals]
+% e.g. /xscale [-2 1 2 3] yields [-2 . . -1 . . 0 . . 1 . . 2]
+%   Logarithmic
+%      /?scale [exponent_of_lower_bound exponent_of_higher_bound]
+% e.g. /xscale [-2 2]     yields [10^-2  10^-1  10^0  10^1  10^2]
+%
+/xscale [1 4] def
+/yscale [0 4] def
+drawsheet
+showpage
+
+%%Trailer
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% Millim.doc follows: %
+%%%%%%%%%%%%%%%%%%%%%%%
+%
+%     The  file  "millim.ps"  contains  PostScript procedures that draw
+%millimetered  paper with logarithmic or linear scales both on x and y;
+%the user should write a PostScript program that calls these routines.
+%
+%     To  do this, save millim.ps and edit a copy of that same file; go
+%to  the end, and replace all the instructions between the lines saying
+%"%%Page 1 1" and "%%Trailer".  Be careful:  THE CASE IS SIGNIFICANT in
+%PostScript!
+%
+%- The first line must be "init".
+%- The  default  paper size is A4; if you are using Letter sized paper,
+%  insert  here  a single line saying "letter"; if you are using custom
+%  paper,  insert  here  two  lines  defining  the paper size, like the
+%  following  examples  (obey to the case and the spacing!  You can use
+%  as  units  inches,  centimeters or millimeters simply typing "in" or
+%  "cm"  or  "mm";  if  no unit is given the default is a "point", i.e.
+%  1/72th of an inch):
+%
+%  /xsheet 8.5 in def
+%  /ysheet 297 mm def
+%  /xsheet 612 def
+%
+%  ("xsheet"  and  "ysheet"  are  the  variable names holding the paper
+%  size; these statements store into them the correct values).
+%- The  default  page  orientation  is  portrait; if you need landscape
+%  orientation, insert here a single line saying "landscape".
+%- Then  insert  (optional) lines to modify the default values of every
+%  constant  that  do not satisfy you needs; these constants with their
+%  default values are:
+%
+%  /margin     2 cm def
+%  /fontsize   10   def
+%  /bordersize 1    def
+%  /linesize   0.4  def
+%  /smallsize  0.01 def
+%  /bordergray 0    def
+%  /linegray   0    def
+%  /smallgray  0    def
+%
+%  and their meaning is the following:
+%. "margin":   the  drawing is done in a rectangular region at "margin"
+%  from  the  paper  borders.   be sure that the axis labels can fit in
+%  "margin" (these labels are ALWAYS printed).
+%. "fontsize"  is the height (in points) of the font (Times-Roman) used
+%  to print the axis labels.
+%. "bordersize",  "linesize" and "smallsize" are the width in points of
+%  the  lines  used to draw the frame borders, the normal divisions and
+%  the  small  subdivisions  (see later for the definitions of the last
+%  two).
+%. "bordergray",  "linegray"  and  "smallgray"  are  the gray levels of
+%  these  same  lines:   they  must  be values from 0 to 1 inclusive, 0
+%  meaning black and 1 meaning white (i.e.  not drawn).  Be careful: on
+%  some printers "gray" lines are rendered as dotted lines;  or, "gray"
+%  and very thin lines  could or could not be drawn  according to their
+%  position on the page.
+%- Then, define two arrays "xscale" and "yscale" in the following way:
+%
+%  /xscale [-2 2]     def      OR
+%  /xscale [0 1 10]   def      OR
+%  /xscale [0 2 10 4] def
+%
+%  (the  difference  between  these  three  variants  is  the number of
+%  arguments inside the square brackets; the same works for yscale).
+%. With  two  arguments, the x/y scale is logarithmic; and the argument
+%  themselves  are  the  powers  of ten of the beginning and the end of
+%  that scale:  [-2 2] means from 10^-2 to 10^2.
+%. With  three  arguments,  the  scale  is  linear;  the first and last
+%  arguments  are  the minimum and maximum value, and the middle one is
+%  the  width  of  the  axis  intervals  where  a  label  and a "normal
+%  division"  line  will be inserted:  [0 1 10] means from 0 to 10 with
+%  labels and divisions every unit.
+%. With  four  arguments, the scale is still linear; the meaning of the
+%  first 3 arguments remains the same, and the fourth one is the number
+%  of sub-intervals in every "normal division":  for every one of these
+%  sub-interval,  a  line is drawn but no label is printed.  [0 2 10 4]
+%  means:   lower value 0, higher value 10, label and normal line every
+%  2 units, and each one of these "normal intervals" further divided in
+%  4 intervals.
+%- Then, insert a statement saying "drawsheet", to perform the drawing.
+%- Then,  insert  a  statement saying "showpage", to print the drawing;
+%  optionally,  if you are proficient in PostScript, you can overimpose
+%  graphs on the drawing before the "showpage" command.
+%- Print the file on a PostScript printer.
+%
+%-----
+%
+%     Enjoy!
+%
+%     The  file millim.ps with its content is public domain, and can be
+%spread and modified as you want.
+%
+%     Comments  and  modifications  are  gladly  accepted  via EMail to
+%loreti@padova.infn.it
+%
+%                                                MLO
+%
+%Maurizio Loreti (MLO) - Ham: I3NOO
+%Work:     University of Padova, Department of Physics
+%          Via F. Marzolo, 8 - 35131 Padova - Italy
+%DECnet:   VAXFPD::LORETI, i.e. 39330::LORETI
+%BITNET:   LORETI@IPDINFN
+%INTERNET: LORETI@PADOVA.INFN.IT
+
