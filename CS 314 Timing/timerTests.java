@@ -12,10 +12,10 @@ import java.math.BigInteger;
 public class timerTests {
 
 	public static void main (String [] args) {
-//		timeDaffyDonald(30, 44);
-//		timeMGPG(1000, 256000);
+		timeDaffyDonald(30, 44);
+		timeMGPG(1000, 256000);
 //		timeMickey(1000, 8192000);
-		bigInt(1000, 64000);
+//		bigInt(1000, 64000);
 	}
 
 	public static void timeDaffyDonald(int startingValue, int endingValue) {
