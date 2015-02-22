@@ -12,8 +12,8 @@ import java.lang.Math;
 
 public class Recursion {
 	
-	/* Recursive function to calculate the sum of the squares from 1 to a
-	* provided integer n. Will break with large numbers. */
+	// Recursive function to calculate the sum of the squares from 1 to a
+	// provided integer n. Will break with large numbers.
 	public static int sumsq(int n) {
 		if (n == 1) return 1;
 		else return (n*n + sumsq(n -1));
