@@ -17,9 +17,13 @@
 
         // return -1 to sort this account before x, else 1
         public int compareTo(Account x) {
-
-            // ***** your code here *****
-
+			if (this.name.compareToIgnoreCase(x.name) < 0) return -1;
+			else if (this.name.compareToIgnoreCase(x.name) > 0) return 1;
+			else if (this.amount > 0 && x.amount < 0) return -1;
+			else if (this.amount < 0 && x.amount > 0) return 1;
+			else if (this.amount < x.amount) return -1;
+			else if (this.amount > x.amount) return 1;
+			else return 0;
         }
 
         public String toString() {

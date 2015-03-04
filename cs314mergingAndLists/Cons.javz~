@@ -104,9 +104,12 @@ public static Cons llmergesort (Cons lst) {
     // ****** your code starts here ******
     // add other functions as you wish.
 
-// Get the union of two sets.
 public static Cons union (Cons x, Cons y) {
-    return mergeunion(llmergesort(x), llmergesort(y));
+    Cons tmpX = x;
+    Cons tmpY = y;
+    tmpX = llmergesort(tmpX);
+    tmpY = llmergesort(tmpY);
+    return mergeunion(tmpX, tmpY);
 }
 
     // following is a helper function for union
@@ -119,9 +122,12 @@ public static Cons mergeunion (Cons x, Cons y) {
     else return cons(first(x), mergeunion(rest(x), rest(y)));
 }    
 
-// Get the set difference of set x minus set y
 public static Cons setDifference (Cons x, Cons y) {
-    return mergediff(llmergesort(x), llmergesort(y));    
+    Cons tmpX = x;
+    Cons tmpY = y;
+    tmpX = llmergesort(tmpX);
+    tmpY = llmergesort(tmpY);
+    return mergediff(tmpX, tmpY);    
 }
 
     // following is a helper function for setDifference
@@ -129,22 +135,18 @@ public static Cons mergediff (Cons x, Cons y) {
     if (x == null) return null;
     else if (y == null) return x;
     if (first(x).equals(first(y))) return mergediff(rest(x), rest(y));
-    else if (((Comparable) first(x)).compareTo(first(y)) > 0) return mergediff(x, rest(y));
     else return cons(first(x), mergediff(rest(x), y));
 }
 
-// Be an evil bank.
 public static Cons bank(Cons accounts, Cons updates) {
-    return llmergesort(bankHelper(accounts, llmergesort(updates), list()));
+    Cons ups = llmergesort(updates);
+    System.out.println("Sorted updates " + ups);
+    return bankHelper(accounts, ups, list());
 }
 
-// Change ups == null to reflect the negative thing.
 public static Cons bankHelper(Cons acts, Cons ups, Cons newAccounts) {
+    if (acts == null) return union(ups, newAccounts);
     if (ups == null) return union(acts, newAccounts);
-    else if (acts == null) {
-        if (((Account) first(ups)).amount() > 0) return bankHelper(acts, rest(ups), cons(first(ups), newAccounts));
-        else return bankHelper(acts, rest(ups), newAccounts);
-    }
     else if (((Account) first(acts)).equals((Account) first(ups))) {
         Account act = new Account(((Account) first(acts)).name(), ((Account) first(acts)).amount());
         while (((Account) first(acts)).equals((Account) first(ups)) && ups != null) {
@@ -173,13 +175,11 @@ public static Cons bankHelper(Cons acts, Cons ups, Cons newAccounts) {
     }
 }
 
-// Merge two arrays of strings
 public static String [] mergearr(String [] x, String [] y) {
     String [] answer = new String[x.length + y.length];
     return mergearrHelper(x, y, 0, 0, answer);
 }
 
-// Helper method for string array merging
 public static String [] mergearrHelper (String [] x, String [] y, int m, int n, String [] answer) {
     if (m == x.length && n == y.length) return answer;
     else if (!(m == x.length) && (n == y.length || x[m].compareTo(y[n]) < 0)) {
@@ -201,43 +201,22 @@ public static String [] mergearrHelper (String [] x, String [] y, int m, int n, 
     }
 }
 
-// Check to see if some markup is well formed, with each tag or string input as a member of a list.
 public static boolean markup(Cons text) {
-   return markupHelper(text, 0, list(), 0, 0, 0, list()); 
+   return markupHelper(text, "<\w*>", false); 
 }
 
-// Helper method to check markup
-public static boolean markupHelper(Cons text, int position, Cons lastOpenPosition, int opens, int closes, int stackLength, Cons stack) {
-    if (text == null) {
-        if (stack == null) return true;
-        else {
-            String tag = "<" + ((String) first(stack)) + ">";
-            System.out.println("You didn't close your tags! The most recent unfulfilled tag is poor " + tag + " at position " + first(lastOpenPosition) + ".");
-            return false;
-        }
+public static boolean markupHelper(Cons text, String regex, boolean answer) {
+    if (text == null) return answer;
+    else if (((String) first(text)).matches(regex)) {
+        answer = markupHelperB(rest(text), "</\w*>");
+        return markupHelper(rest(text), regex, answer);
     }
-    else if (((String) first(text)).matches("<\\w*>")) {
-        String tag = ((String) first(text)).replaceAll("<|>", "");
-        return markupHelper(rest(text), ++position, cons(position - 1, lastOpenPosition), ++opens, closes, ++stackLength, cons(tag, stack));
-    }
-    else if (((String) first(text)).matches("</\\w*>")) {
-        String tag = ((String) first(text)).replaceAll("<|>|/", "");
-        if (tag.equals((String) first(stack))) { return markupHelper(rest(text), ++position, rest(lastOpenPosition), opens, ++closes, --stackLength, rest(stack)); }
-        else if (tag.equalsIgnoreCase((String) first(stack))) {
-            System.out.println("Style warning: tag cases do not match! Consider writing better code. We'll ignore the error, this time.");
-            return markupHelper(rest(text), ++position, rest(lastOpenPosition), opens, ++closes, --stackLength, rest(stack));
-        }
-        else {
-            closes++;
-            if (closes > opens) System.out.println("Problem with tag </" + tag + "> at position " + (position - 1) + ". You closed before you opened!");
-            else {
-                String openTag = ((String) first(stack));
-                System.out.println("Problem with tag </" + tag + "> at position " + position + ". Expected </" + openTag + "> to match <" + openTag + "> at position " + first(lastOpenPosition) + ".");
-            }
-            return false;
-        }
-    }
-    else return markupHelper(rest(text), ++position, lastOpenPosition, opens, closes, stackLength, stack);
+    else return markupHelper(rest(text), regex, answer);
+}
+
+public static boolean markupHelperB(Cons text, String regex) {
+    if (text == null) return false;
+    else return (((String) first(text)).matches(regex)) ? true : markupHelperB(rest(text), regex);
 }
 
     // ****** your code ends here ******
@@ -259,15 +238,10 @@ public static boolean markupHelper(Cons text, int position, Cons lastOpenPositio
         Cons mySet0 = list("a", "b", "c", "d");
         Cons mySet1 = list("a", "b", "c", "d");
         Cons mySet2 = list("b", "c", "a", "e");
-        Cons mySet3 = list("a", "z", "t", "r");
-        Cons weirdSet1 = list("z", "t", "e", "u", "o");
-        Cons weirdSet2 = list("z", "t", "e", "p", "m");
         System.out.println("mySet0 = " + Cons.toString(mySet0));
         System.out.println("mySet1 = " + Cons.toString(mySet1));
         System.out.println("mySet2 = " + Cons.toString(mySet2));
-        System.out.println("mySet3 = " + mySet3);
         System.out.println("Differences: ");
-        System.out.println("0 - 3 = " + setDifference(mySet0, mySet3));
         System.out.println("0-1 = " + Cons.toString(setDifference(mySet0, mySet1)));
         System.out.println("mySet1 = " + mySet1);
         System.out.println("0-2= " + Cons.toString(setDifference(mySet0, mySet2)));
@@ -275,7 +249,6 @@ public static boolean markupHelper(Cons text, int position, Cons lastOpenPositio
         System.out.println("1-2 = " + Cons.toString(setDifference(mySet1, mySet2)));
         System.out.println("mySet2 = " + mySet2);
         System.out.println("1-0 = " + Cons.toString(setDifference(mySet1, mySet0)));
-        System.out.println("Weird difference = " + setDifference(weirdSet1, weirdSet2));
         Cons accounts = list(
                new Account("Arbiter", new Integer(498)),
                new Account("Flintstone", new Integer(102)),
